@@ -22,8 +22,12 @@ void start_user_shell(struct pwdb_passwd *user);
 
 int authenticate_user(const char *username, struct pwdb_passwd **user_info) {
     struct pwdb_passwd *p = pwdb_getpwnam(username);
+
+    char *entered_password = getpass("Password: "); // Fråga alltid efter lösenord
+
     if (p == NULL) {
-        return NOUSER;  // Användaren finns inte
+        printf("Unknown user or incorrect password.\n\n");
+        return NOUSER;
     }
 
     // Om kontot är låst
@@ -32,11 +36,9 @@ int authenticate_user(const char *username, struct pwdb_passwd **user_info) {
         return NOUSER;
     }
 
-    char *entered_password = getpass("Password: ");
-
-    if (strcmp(crypt(entered_password, p->pw_passwd), p->pw_passwd) == 0) {
+    if (strcmp(crypt(entered_password, p->pw_passwd), p->pw_passwd) == 0) { // Hasha och jämför
         *user_info = p;
-        
+
         // Återställ misslyckade försök och öka inloggningsåldern
         p->pw_failed = 0;
         p->pw_age++;
@@ -58,6 +60,7 @@ int authenticate_user(const char *username, struct pwdb_passwd **user_info) {
         if (pwdb_update_user(p) != 0) {
             printf("Error updating failed login attempts.\n");
         }
+        printf("Unknown user or incorrect password.\n\n"); // Felmeddelande efter lösenordsförsök
         return NOUSER;
     }
 }
@@ -127,9 +130,7 @@ int main() {
             printf("User authenticated successfully\n");
             print_user_info(user_info);
             start_user_shell(user_info);  // Starta användarens terminal efter inloggning
-        } else {
-            printf("Unknown user or incorrect password.\n\n");
-        }
+        } 
     }
 
     return 0;
